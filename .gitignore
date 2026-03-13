@@ -1,0 +1,9 @@
+node_modules
+*.DS_Store
+.claude
+*.log
+*.pid
+.env*
+dist/
+build/
+test-space/

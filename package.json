@@ -1,0 +1,35 @@
+{
+	"name": "sep-field",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"bin": {
+		"sep": "src/cli.ts"
+	},
+	"scripts": {
+		"start": "bun run src/start.ts",
+		"client": "bun run src/tui/client.tsx",
+		"stop": "bun run src/stop.ts",
+		"status": "bun run src/status.ts",
+		"monitor": "bun run src/monitor.ts",
+		"dev": "bun run src/main.ts",
+		"typecheck": "bunx tsc --noEmit",
+		"docs": "bun run src/docs/generate-docs.ts",
+		"service:install": "bun run src/service/install.ts",
+		"service:uninstall": "bun run src/service/install.ts --uninstall",
+		"phase4:start": "cd daemon-orchestrator-demo && bun run phase4:start",
+		"phase4:client": "cd daemon-orchestrator-demo && bun run phase4:client",
+		"phase4:stop": "cd daemon-orchestrator-demo && bun run phase4:stop",
+		"phase4:status": "cd daemon-orchestrator-demo && bun run phase4:status"
+	},
+	"dependencies": {
+		"@xterm/headless": "^6.0.0",
+		"ink": "^6.8.0",
+		"react": "^19.2.4",
+		"zustand": "^5.0.11"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.14",
+		"bun-types": "^1.3.9"
+	}
+}
