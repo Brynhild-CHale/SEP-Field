@@ -69,7 +69,7 @@ sep start        # Start daemon
 sep stop         # Stop daemon
 sep status       # Check daemon status
 sep log          # Tail daemon log
-sep -h           # Show all commands
+sep -h           # Show all commands 
 ```
 
 Or use `bun run` scripts directly:
