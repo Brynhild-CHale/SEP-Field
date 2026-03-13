@@ -18,6 +18,7 @@ const COMMANDS: Record<string, { target: string; args?: string[]; description: s
 	install:   { target: 'src/service/install.ts',  description: 'Install launchd service' },
 	uninstall: { target: 'src/service/install.ts',  args: ['--uninstall'], description: 'Uninstall launchd service' },
 	monitor:   { target: 'src/monitor.ts',           description: 'Real-time resource monitor' },
+	update:    { target: 'src/service/update.ts',    description: 'Check for and apply updates' },
 };
 
 const cmd = process.argv[2];
@@ -39,6 +40,7 @@ if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
 	console.log('    install      Install launchd service');
 	console.log('    uninstall    Uninstall launchd service');
 	console.log('    monitor      Real-time resource monitor');
+	console.log('    update       Check for and apply updates');
 	console.log('    log          Tail daemon log');
 	console.log('    -h, --help   Show this help');
 	console.log('');

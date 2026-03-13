@@ -32,11 +32,24 @@ macOS with:
 
 ## Install
 
-```bash
-# Install dependencies
-bun install
+One-liner (installs Bun if needed, clones to `~/.sep-field`):
 
-# Install as macOS login service (interactive — checks prereqs, configures VM resources)
+```bash
+curl -fsSL https://raw.githubusercontent.com/Brynhild-CHale/SEP-Field/main/install.sh | bash
+```
+
+Or set a custom install directory:
+
+```bash
+SEP_FIELD_DIR=~/my/path curl -fsSL https://raw.githubusercontent.com/Brynhild-CHale/SEP-Field/main/install.sh | bash
+```
+
+### Manual install
+
+```bash
+git clone https://github.com/Brynhild-CHale/SEP-Field.git ~/.sep-field
+cd ~/.sep-field
+bun install
 bun run service:install
 ```
 
