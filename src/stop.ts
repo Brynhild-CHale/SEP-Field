@@ -12,6 +12,7 @@ import {
 	ORCHESTRATOR_SOCKET_PATH,
 } from './transport/protocol.ts';
 import { PLIST_LABEL, PLIST_PATH } from './service/paths.ts';
+import { checkSocketAlive } from './service/liveness.ts';
 
 function isProcessRunning(pid: number): boolean {
 	try {
@@ -33,7 +34,16 @@ if (existsSync(PLIST_PATH)) {
 	});
 
 	if (kill.exitCode === 0) {
-		console.log('Daemon stopped via launchd');
+		// Wait for the daemon to actually shut down (up to 10s)
+		process.stdout.write('Stopping daemon...');
+		for (let i = 0; i < 40; i++) {
+			await Bun.sleep(250);
+			if (!(await checkSocketAlive())) {
+				console.log(' stopped.');
+				process.exit(0);
+			}
+		}
+		console.log(' stopped (socket lingered).');
 		process.exit(0);
 	}
 

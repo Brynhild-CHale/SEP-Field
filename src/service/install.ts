@@ -296,14 +296,15 @@ console.log('  - Restart automatically on crash');
 console.log('  - NOT restart after graceful stop (sep stop)');
 console.log('');
 console.log(`VM config: ${vmConfig.cpus} CPUs, ${vmConfig.memoryGB} GB RAM`);
-console.log('');
-console.log('Commands:');
-console.log('  sep              — connect TUI client');
-console.log('  sep start        — kick the service if stopped');
-console.log('  sep stop         — graceful shutdown (no auto-restart)');
-console.log('  sep status       — check daemon status');
-console.log('  sep log          — tail daemon log');
-console.log('  sep -h           — show all commands');
+// Show available commands by running sep --help
+const helpProc = Bun.spawnSync(['bun', 'run', resolve(PROJECT_ROOT, 'src/cli.ts'), '--help'], {
+	stdout: 'pipe',
+	stderr: 'pipe',
+	cwd: PROJECT_ROOT,
+});
+if (helpProc.exitCode === 0) {
+	process.stdout.write(helpProc.stdout.toString());
+}
 
 if (!shimInPath) {
 	console.log('');

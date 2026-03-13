@@ -119,7 +119,7 @@ async function main() {
 	const alive = await checkSocketAlive();
 	if (alive) {
 		console.log('');
-		console.log('Note: daemon is running — restart with `sep stop && sep start` to apply.');
+		console.log('Note: daemon is running — restart with `sep restart` to apply.');
 	}
 }
 

@@ -34,6 +34,7 @@ if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
 	console.log('    (no args)    Connect TUI client');
 	console.log('    start        Start daemon');
 	console.log('    stop         Stop daemon');
+	console.log('    restart      Stop and restart daemon');
 	console.log('    status       Check daemon status');
 	console.log('    client       Connect TUI client (explicit)');
 	console.log('    dev          Run daemon in foreground');
@@ -45,6 +46,26 @@ if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
 	console.log('    -h, --help   Show this help');
 	console.log('');
 	process.exit(0);
+}
+
+// Restart — special case, runs stop then start sequentially
+if (cmd === 'restart') {
+	const stopPath = resolve(PROJECT_ROOT, 'src/stop.ts');
+	const stopProc = Bun.spawn(['bun', 'run', stopPath], {
+		stdio: ['inherit', 'inherit', 'inherit'],
+		cwd: PROJECT_ROOT,
+		env: process.env,
+	});
+	await stopProc.exited;
+
+	const startPath = resolve(PROJECT_ROOT, 'src/start.ts');
+	const startProc = Bun.spawn(['bun', 'run', startPath], {
+		stdio: ['inherit', 'inherit', 'inherit'],
+		cwd: PROJECT_ROOT,
+		env: process.env,
+	});
+	process.exitCode = await startProc.exited;
+	process.exit();
 }
 
 // Log — special case, spawns tail
