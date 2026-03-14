@@ -43,44 +43,72 @@ export const SPLASH_ART = `\n${DIM}${SHIP_LINES.join('\n')}${RESET}\n${STATIC_BO
 // -- Animation helpers -------------------------------------------------------
 
 const SHIP_ROW_COUNT = SHIP_LINES.length;
-const CLR_LINE = '\x1B[2K';
-const HIDE_CURSOR = '\x1B[?25l';
-const SHOW_CURSOR = '\x1B[?25h';
-/** DECSC / DECRC — save and restore cursor position. */
-const SAVE = '\x1B7';
-const RESTORE = '\x1B8';
+const CLR = '\x1B[2K';
+const HIDE_CUR = '\x1B[?25l';
+const SHOW_CUR = '\x1B[?25h';
+const UP = (n: number) => `\x1B[${n}A`;
+const DOWN = (n: number) => `\x1B[${n}B`;
 const sleep = (ms: number) => Bun.sleep(ms);
 
-/** Render all ship lines. Cursor must be at ship row 0 col 0 on entry. */
-function renderShip(style: string): string {
-	return SHIP_LINES.map((l) => `${CLR_LINE}${style}${l}${RESET}`).join('\r\n');
+/**
+ * Render ship lines (cursor must start at ship row 0).
+ * Cursor ends on the last ship line.
+ */
+function shipFrame(style: string): string {
+	return SHIP_LINES.map((l) => `\r${CLR}${style}${l}${RESET}`).join('\n');
 }
 
-/** Clear all ship lines. Cursor must be at ship row 0 on entry. */
-function blankShip(): string {
-	return Array.from({ length: SHIP_ROW_COUNT }, () => CLR_LINE).join('\r\n');
+/**
+ * Blank ship lines (cursor must start at ship row 0).
+ * Cursor ends on the last ship line.
+ */
+function shipBlank(): string {
+	return Array.from({ length: SHIP_ROW_COUNT }, () => `\r${CLR}`).join('\n');
 }
 
 /**
  * Animated splash: ship flickers then dims and vanishes,
  * static logo + interference lines stay put below.
+ *
+ * Falls back to static print when stdout is not a TTY (e.g. piped install).
  */
 export async function playSplash(stream: NodeJS.WriteStream = process.stdout): Promise<void> {
 	const w = (s: string) => stream.write(s);
 
-	w(HIDE_CURSOR);
+	// No animation if not a TTY — just print the static art.
+	if (!stream.isTTY) {
+		w(SPLASH_ART);
+		return;
+	}
 
-	// Print a blank line, then save cursor (this is ship row 0).
+	w(HIDE_CUR);
+
+	// -- Initial render --
+	// Layout:  \n → ship (10 lines) → STATIC_BOTTOM (14 \n characters)
+	// After this, cursor is 14 rows below the last ship line.
 	w('\n');
-	w(SAVE);
-
-	// Render initial ship + static section below.
-	w(renderShip(DIM));
+	w(shipFrame(DIM));
 	w(STATIC_BOTTOM);
 
-	// Save end-of-output position so we can return after animation.
-	// Use xterm alternate save (SCOSC) since DECSC is used for ship top.
-	// Instead: just remember we need to re-print \n at the end to land below.
+	// Count how many \n in STATIC_BOTTOM — this is how far below the last ship line we are.
+	const belowShip = (STATIC_BOTTOM.match(/\n/g) || []).length;
+	// To reach ship row 0 from end: up past STATIC_BOTTOM, then up through the ship.
+	const endToShipTop = belowShip + SHIP_ROW_COUNT - 1;
+	// After rendering/blanking ship, cursor is on last ship line.
+	// To return to end position from there:
+	const shipBottomToEnd = belowShip;
+
+	//
+	// Every animation frame follows the same pattern:
+	//   1. UP(endToShipTop)      — cursor to ship row 0
+	//   2. shipFrame / shipBlank — cursor to last ship row
+	//   3. DOWN(shipBottomToEnd) — cursor back to end position
+	//
+	const frame = (content: string) => {
+		w(UP(endToShipTop));
+		w(content);
+		w(DOWN(shipBottomToEnd));
+	};
 
 	// -- Flicker sequence --
 	const flickers = [
@@ -88,36 +116,23 @@ export async function playSplash(stream: NodeJS.WriteStream = process.stdout): P
 		{ on: 80,  off: 90 },
 		{ on: 120, off: 60 },
 	];
-
 	for (const { on, off } of flickers) {
 		await sleep(on);
-		w(RESTORE);         // jump to ship row 0
-		w(blankShip());
+		frame(shipBlank());
 		await sleep(off);
-		w(RESTORE);         // jump to ship row 0
-		w(renderShip(DIM));
+		frame(shipFrame(DIM));
 	}
 
 	await sleep(200);
 
-	// -- Fade sequence (grey ramp → gone) --
-	const greys = [248, 242, 238, 236];
-	for (const g of greys) {
-		w(RESTORE);
-		w(renderShip(`\x1B[38;5;${g}m`));
+	// -- Fade (grey ramp → gone) --
+	for (const g of [248, 242, 238, 236]) {
+		frame(shipFrame(`\x1B[38;5;${g}m`));
 		await sleep(160);
 	}
 
-	// -- Final: blank the ship region --
-	w(RESTORE);
-	w(blankShip());
+	// -- Final blank --
+	frame(shipBlank());
 
-	// Move cursor past the static section to the end.
-	// Count visible content lines in STATIC_BOTTOM (lines between leading/trailing \n).
-	const staticContentLines = STATIC_BOTTOM.split('\n').filter(l => l.length > 0).length;
-	// From last ship line, move down: 1 (blank from leading \n) + content lines + 1 (trailing \n)
-	w(`\x1B[${staticContentLines + 2}B`);
-	w('\r');
-
-	w(SHOW_CURSOR);
+	w(SHOW_CUR);
 }
