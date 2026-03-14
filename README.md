@@ -115,15 +115,116 @@ See [Writing Actions](docs/writing-actions.md) for the file format.
 |--------|----------|-------------|
 | [`archive-agent`](docs/actions.md#archive-agent) | lifecycle | Teardown container and remove session, workspace stays on disk |
 | [`create-agent`](docs/actions.md#create-agent) | lifecycle | Create a new agent container and session |
+| [`create-interactive-agent`](docs/actions.md#create-interactive-agent) | lifecycle | Create an agent in interactive mode (no prompt) |
 | [`kill-agent`](docs/actions.md#kill-agent) | lifecycle | Kill a running agent process |
 | [`list-agents`](docs/actions.md#list-agents) | monitoring | List all current agent sessions |
+| [`manage-cache`](docs/actions.md#manage-cache) | tooling | Build, list, and remove cached container images for faster startup |
+| [`manage-profiles`](docs/actions.md#manage-profiles) | tooling | Manage container profiles (list, get, create, delete) |
 | [`open-vscode`](docs/actions.md#open-vscode) | tooling | Launch VS Code attached to an agent devcontainer |
 | [`restart-agent`](docs/actions.md#restart-agent) | lifecycle | Restart an exited or running session |
 
 See [Action Reference](docs/actions.md) for full details and [Writing Actions](docs/writing-actions.md) for the authoring guide.
-
-Note: Claude Code needs to be installed and set up for create-agent to bypass onboarding and for credentials to be passed to containers.
 <!-- ACTIONS-END -->
+
+## API
+
+The daemon exposes an HTTP API (default port `7080`) for programmatic control. This is the primary interface for driving SEP-Field from other agents, scripts, or CI pipelines.
+
+### Discovery
+
+`GET /` returns a full API schema — every endpoint, every registered action with its parameters, examples, and type definitions. This is designed for agentic consumption: point an LLM at this endpoint and it has everything it needs to operate the system.
+
+```bash
+curl http://localhost:7080/
+```
+
+Response includes:
+- `endpoints` — all available routes with methods and descriptions
+- `actions` — every registered action with name, description, category, params (name/type/required/default/description), and example invocations with expected responses
+- `types` — `SessionInfo` and `ActionResult` schemas
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | API schema and action discovery (start here) |
+| `GET` | `/actions` | List all available actions with metadata |
+| `GET` | `/sessions` | List current agent sessions with state |
+| `GET` | `/actions/:name/options/:param` | Resolve dynamic select options for a parameter |
+| `POST` | `/actions/:name` | Execute an action (JSON body with params) |
+
+### Quick examples
+
+```bash
+# Discover everything the API can do
+curl http://localhost:7080/
+
+# List running agents
+curl http://localhost:7080/sessions
+
+# Create an agent
+curl -X POST http://localhost:7080/actions/create-agent \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "my-agent", "cwd": "./workspace", "prompt": "Fix the login bug"}'
+
+# List agents (via action)
+curl -X POST http://localhost:7080/actions/list-agents
+
+# Kill an agent
+curl -X POST http://localhost:7080/actions/kill-agent \
+  -H 'Content-Type: application/json' \
+  -d '{"id": "agent-a1b2c3d4"}'
+
+# Archive (teardown container, keep workspace)
+curl -X POST http://localhost:7080/actions/archive-agent \
+  -H 'Content-Type: application/json' \
+  -d '{"id": "agent-a1b2c3d4"}'
+```
+
+### Response format
+
+All action responses follow the `ActionResult` shape:
+
+```json
+{ "success": true, "data": { ... } }
+{ "success": false, "error": "reason" }
+```
+
+HTTP status: `200` on success, `400` on action failure, `404` on unknown action, `500` on exception.
+
+### Agentic usage
+
+The `GET /` discovery endpoint is purpose-built for LLM tool use. A typical integration pattern:
+
+1. Fetch `GET /` to get the full schema
+2. Present the actions list as available tools
+3. Map action params to tool parameters
+4. Execute via `POST /actions/:name` with JSON body
+
+Custom actions dropped into `~/.config/sep-field/actions/` are automatically hot-loaded and appear in discovery — no daemon restart needed. This means you can extend the API surface while the system is running.
+
+### Port configuration
+
+The API port defaults to `7080`. To change it:
+
+**During install** — the installer prompts for a custom port.
+
+**After install** — edit `~/.config/sep-field/config.json`:
+
+```json
+{
+  "apiPort": 8080,
+  "vm": { ... }
+}
+```
+
+Then restart the daemon (`sep stop && sep start`).
+
+**Ad-hoc** — set the `API_PORT` environment variable:
+
+```bash
+API_PORT=8080 bun run dev
+```
 
 ## Architecture
 

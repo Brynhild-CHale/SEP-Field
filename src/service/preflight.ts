@@ -171,3 +171,36 @@ export function writeVMConfig(config: VMConfig): void {
 
 	writeFileSync(CONFIG_PATH, JSON.stringify(existing, null, '\t') + '\n');
 }
+
+/**
+ * Read API port from config.json, or null if not set.
+ */
+export function readApiPort(): number | null {
+	try {
+		if (existsSync(CONFIG_PATH)) {
+			const raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+			if (typeof raw?.apiPort === 'number') {
+				return raw.apiPort;
+			}
+		}
+	} catch { /* ignore */ }
+	return null;
+}
+
+/**
+ * Write API port to config.json, preserving other keys.
+ */
+export function writeApiPort(port: number): void {
+	mkdirSync(CONFIG_DIR, { recursive: true });
+
+	let existing: Record<string, unknown> = {};
+	try {
+		if (existsSync(CONFIG_PATH)) {
+			existing = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+		}
+	} catch { /* start fresh */ }
+
+	existing.apiPort = port;
+
+	writeFileSync(CONFIG_PATH, JSON.stringify(existing, null, '\t') + '\n');
+}

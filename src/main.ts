@@ -26,6 +26,7 @@ import { ActionWatcher } from './actions/action-watcher.ts';
 import { generateDocs } from './docs/generate-docs.ts';
 import { ORCHESTRATOR_PID_PATH, ORCHESTRATOR_SOCKET_PATH, API_DEFAULT_PORT } from './transport/protocol.ts';
 import { LOG_DIR, USER_ACTIONS_DIR, PROFILES_DIR } from './service/paths.ts';
+import { readApiPort } from './service/preflight.ts';
 import type { Action, Logger } from './types/index.ts';
 
 // Ensure log directory exists (needed when launchd runs main.ts directly)
@@ -91,7 +92,10 @@ const actionWatcher = new ActionWatcher(
 );
 
 // --- Instantiate API server ---
-const apiPort = parseInt(process.env.API_PORT || String(API_DEFAULT_PORT), 10);
+const configPort = readApiPort();
+const apiPort = process.env.API_PORT
+	? parseInt(process.env.API_PORT, 10)
+	: configPort ?? API_DEFAULT_PORT;
 const apiServer = new ApiServer(sepSys, actions, logger, apiPort);
 
 // --- Cleanup helper ---

@@ -30,6 +30,8 @@ import {
 	computeDefaults,
 	readExistingVMConfig,
 	writeVMConfig,
+	readApiPort,
+	writeApiPort,
 	type VMConfig,
 } from './preflight.ts';
 import { playSplash } from './splash.ts';
@@ -127,6 +129,31 @@ if (isTTY) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 2b: API Port Configuration
+// ---------------------------------------------------------------------------
+
+const existingPort = readApiPort();
+let apiPort = existingPort ?? 7080;
+
+if (isTTY) {
+	if (existingPort) {
+		console.log(`  API port: ${existingPort}`);
+	} else {
+		console.log('  API port: 7080 (default)');
+	}
+
+	const customPort = await promptYesNo('  Use a custom API port? [y/N] ', false);
+	if (customPort) {
+		apiPort = await promptNumber('  API port (1024-65535): ', apiPort, 1024, 65535);
+		writeApiPort(apiPort);
+		console.log(`  API port saved: ${apiPort}`);
+	} else if (!existingPort) {
+		writeApiPort(apiPort);
+	}
+	console.log('');
+}
+
+// ---------------------------------------------------------------------------
 // Phase 3: launchd setup
 // ---------------------------------------------------------------------------
 
@@ -196,6 +223,8 @@ const plist = `<?xml version="1.0" encoding="UTF-8"?>
 		<string>${PID_PATH}</string>
 		<key>SEP_FIELD_LOG</key>
 		<string>${LOG_PATH}</string>
+		<key>API_PORT</key>
+		<string>${apiPort}</string>
 	</dict>
 
 	<key>StandardOutPath</key>
