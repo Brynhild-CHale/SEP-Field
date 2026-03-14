@@ -32,7 +32,7 @@ import {
 	writeVMConfig,
 	type VMConfig,
 } from './preflight.ts';
-import { SPLASH_ART } from './splash.ts';
+import { playSplash } from './splash.ts';
 
 const uid = process.getuid!();
 const domain = `gui/${uid}`;
@@ -50,7 +50,7 @@ if (process.argv.includes('--uninstall')) {
 // Phase 1: Splash + Prerequisite Check
 // ---------------------------------------------------------------------------
 
-console.log(SPLASH_ART);
+await playSplash();
 console.log('');
 
 const report = runPreflight();
