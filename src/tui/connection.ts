@@ -5,6 +5,7 @@
  * HTTP API. Updates the zustand store on server-pushed frames.
  */
 
+import { PROJECT_ROOT } from '../service/paths.ts';
 import {
 	ORCHESTRATOR_SOCKET_PATH,
 	MSG_HISTORY,
@@ -154,6 +155,38 @@ export async function executeAction(
 		return { success: false, message: result.error || 'Unknown error' };
 	} catch (err) {
 		return { success: false, message: String(err) };
+	}
+}
+
+// ── Update check ────────────────────────────────────────────────────
+
+export async function checkForUpdate(): Promise<void> {
+	try {
+		const run = (cmd: string[]) => {
+			const r = Bun.spawnSync(cmd, { cwd: PROJECT_ROOT, stdout: 'pipe', stderr: 'pipe' });
+			return { ok: r.exitCode === 0, stdout: r.stdout.toString().trim() };
+		};
+
+		// Verify git repo
+		if (!run(['git', 'rev-parse', '--is-inside-work-tree']).ok) return;
+
+		// Fetch (network call — runs async-ish via spawnSync but is fast)
+		if (!run(['git', 'fetch', 'origin']).ok) return;
+
+		const branch = run(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).stdout;
+		const localHead = run(['git', 'rev-parse', 'HEAD']).stdout;
+		const remoteHead = run(['git', 'rev-parse', `origin/${branch}`]);
+
+		if (!remoteHead.ok || localHead === remoteHead.stdout) return;
+
+		const countResult = run(['git', 'rev-list', '--count', `HEAD..origin/${branch}`]);
+		const count = countResult.ok ? parseInt(countResult.stdout, 10) : 0;
+
+		if (count > 0) {
+			store.setState({ updateAvailable: true, updateCommitCount: count });
+		}
+	} catch {
+		// Silently ignore — update check is best-effort
 	}
 }
 

@@ -58,6 +58,10 @@ export interface AppState {
 	pendingAttachSessionId: string | null;
 	attachRejectedReason: string | null;
 
+	// Update availability
+	updateAvailable: boolean;
+	updateCommitCount: number;
+
 	// Attached-mode signals (written by connection.ts, consumed by attached-mode.ts)
 	liveDataPayload: Buffer | null;
 	historyEndSignal: number;
@@ -88,6 +92,9 @@ export const store = createStore<AppState>()(() => ({
 
 	pendingAttachSessionId: null,
 	attachRejectedReason: null,
+
+	updateAvailable: false,
+	updateCommitCount: 0,
 
 	liveDataPayload: null,
 	historyEndSignal: 0,

@@ -14,6 +14,7 @@ import {
 import { PLIST_LABEL, PLIST_PATH } from './service/paths.ts';
 import { checkSocketAlive } from './service/liveness.ts';
 import { isColimaAvailable, getVMInfo, getContainerStats } from './core/docker-stats.ts';
+import { PROJECT_ROOT } from './service/paths.ts';
 
 function isProcessRunning(pid: number): boolean {
 	try {
@@ -98,6 +99,31 @@ if (isColimaAvailable()) {
 				}
 			} else {
 				console.log('Containers: 0');
+			}
+		}
+	}
+}
+
+// --- Update check ---
+{
+	const run = (cmd: string[]) => {
+		const r = Bun.spawnSync(cmd, { cwd: PROJECT_ROOT, stdout: 'pipe', stderr: 'pipe' });
+		return { ok: r.exitCode === 0, stdout: r.stdout.toString().trim() };
+	};
+	const gitCheck = run(['git', 'rev-parse', '--is-inside-work-tree']);
+	if (gitCheck.ok) {
+		const fetch = run(['git', 'fetch', 'origin']);
+		if (fetch.ok) {
+			const branch = run(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).stdout;
+			const localHead = run(['git', 'rev-parse', 'HEAD']).stdout;
+			const remoteHead = run(['git', 'rev-parse', `origin/${branch}`]);
+			if (remoteHead.ok && localHead !== remoteHead.stdout) {
+				const countResult = run(['git', 'rev-list', '--count', `HEAD..origin/${branch}`]);
+				const count = countResult.ok ? parseInt(countResult.stdout, 10) : 0;
+				if (count > 0) {
+					console.log('');
+					console.log(`Update available: ${count} new commit${count === 1 ? '' : 's'} — run \`sep update\` to install`);
+				}
 			}
 		}
 	}

@@ -17,7 +17,7 @@
 		"docs": "bun run src/docs/generate-docs.ts",
 		"update": "bun run src/service/update.ts",
 		"service:install": "bun run src/service/install.ts",
-		"service:uninstall": "bun run src/service/install.ts --uninstall",
+		"service:uninstall": "bun run src/service/uninstall.ts",
 		"phase4:start": "cd daemon-orchestrator-demo && bun run phase4:start",
 		"phase4:client": "cd daemon-orchestrator-demo && bun run phase4:client",
 		"phase4:stop": "cd daemon-orchestrator-demo && bun run phase4:stop",

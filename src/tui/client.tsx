@@ -22,6 +22,7 @@ import {
 	sendStdin,
 	sendResize,
 	fetchActions,
+	checkForUpdate,
 } from './connection.ts';
 import { restoreTerminal } from './sanitize.ts';
 import { App } from './components/App.tsx';
@@ -155,6 +156,7 @@ if (stdin.isTTY) {
 
 await connect();
 fetchActions();
+checkForUpdate(); // Best-effort, non-blocking
 stdout.write('\x1B[?1049h'); // Enter alternate screen buffer
 stdout.write('\x1B[2J\x1B[H');
 mountInk();

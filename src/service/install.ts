@@ -42,39 +42,7 @@ const domain = `gui/${uid}`;
 // ---------------------------------------------------------------------------
 
 if (process.argv.includes('--uninstall')) {
-	// Bootout (unload) the service
-	const bootout = Bun.spawnSync(['launchctl', 'bootout', `${domain}/${PLIST_LABEL}`], {
-		stdout: 'pipe',
-		stderr: 'pipe',
-	});
-
-	if (bootout.exitCode === 0) {
-		console.log(`Unloaded ${PLIST_LABEL}`);
-	} else {
-		const stderr = bootout.stderr.toString().trim();
-		// 3 = "No such process" — service wasn't loaded, that's fine
-		if (bootout.exitCode === 3 || stderr.includes('Could not find service')) {
-			console.log(`Service was not loaded (already unloaded)`);
-		} else {
-			console.error(`launchctl bootout failed (exit ${bootout.exitCode}): ${stderr}`);
-		}
-	}
-
-	// Remove plist file
-	if (existsSync(PLIST_PATH)) {
-		unlinkSync(PLIST_PATH);
-		console.log(`Removed ${PLIST_PATH}`);
-	}
-
-	// Remove CLI shim
-	const home = process.env.HOME || '/tmp';
-	const shimPath = resolve(home, '.bun', 'bin', 'sep');
-	if (existsSync(shimPath)) {
-		unlinkSync(shimPath);
-		console.log(`Removed ${shimPath}`);
-	}
-
-	console.log('Service uninstalled.');
+	console.log('Use `sep uninstall` or `bun run src/service/uninstall.ts` instead.');
 	process.exit(0);
 }
 

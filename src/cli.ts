@@ -16,7 +16,7 @@ const COMMANDS: Record<string, { target: string; args?: string[]; description: s
 	client:    { target: 'src/tui/client.tsx',       description: 'Connect TUI client' },
 	dev:       { target: 'src/main.ts',             description: 'Run daemon in foreground' },
 	install:   { target: 'src/service/install.ts',  description: 'Install launchd service' },
-	uninstall: { target: 'src/service/install.ts',  args: ['--uninstall'], description: 'Uninstall launchd service' },
+	uninstall: { target: 'src/service/uninstall.ts', description: 'Uninstall SEP-Field' },
 	monitor:   { target: 'src/monitor.ts',           description: 'Real-time resource monitor' },
 	update:    { target: 'src/service/update.ts',    description: 'Check for and apply updates' },
 };
@@ -39,7 +39,7 @@ if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
 	console.log('    client       Connect TUI client (explicit)');
 	console.log('    dev          Run daemon in foreground');
 	console.log('    install      Install launchd service');
-	console.log('    uninstall    Uninstall launchd service');
+	console.log('    uninstall    Uninstall SEP-Field');
 	console.log('    monitor      Real-time resource monitor');
 	console.log('    update       Check for and apply updates');
 	console.log('    log          Tail daemon log');
