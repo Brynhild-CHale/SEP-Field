@@ -69,17 +69,17 @@ if (socketAlive) {
 	if (serviceInstalled) {
 		console.log(`Service: installed${launchdState ? ` (${launchdState})` : ''}`);
 	}
-	console.log('Connect with: bun run client');
+	console.log('Connect with: sep client');
 } else if (pid) {
 	console.log(`Daemon: process exists (PID: ${pid}) but socket not responding`);
 	console.log(`Log: ${ORCHESTRATOR_LOG_PATH}`);
 } else if (serviceInstalled) {
 	console.log(`Daemon: not running (service installed but stopped)`);
 	console.log(`Service state: ${launchdState || 'unknown'}`);
-	console.log('Start with: bun run start');
+	console.log('Start with: sep start');
 } else {
 	console.log('Daemon: not running');
-	console.log('Start with: bun run start');
+	console.log('Start with: sep start');
 }
 
 // --- Resource section ---

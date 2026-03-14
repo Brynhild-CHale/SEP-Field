@@ -6,8 +6,10 @@
  * Installed as a shell shim by `src/service/install.ts`.
  */
 
+import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { PROJECT_ROOT, LOG_PATH } from './service/paths.ts';
+import { PROJECT_ROOT, LOG_PATH, PLIST_LABEL, PLIST_PATH } from './service/paths.ts';
+import { checkSocketAlive } from './service/liveness.ts';
 
 const COMMANDS: Record<string, { target: string; args?: string[]; description: string }> = {
 	start:     { target: 'src/start.ts',            description: 'Start daemon' },
@@ -48,8 +50,32 @@ if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
 	process.exit(0);
 }
 
-// Restart — special case, runs stop then start sequentially
+// Restart — special case
 if (cmd === 'restart') {
+	// Launchd path: atomic kill + restart via kickstart
+	if (existsSync(PLIST_PATH)) {
+		const uid = process.getuid!();
+		const target = `gui/${uid}/${PLIST_LABEL}`;
+		const kick = Bun.spawnSync(['launchctl', 'kickstart', '-k', '-p', target], {
+			stdout: 'pipe',
+			stderr: 'pipe',
+		});
+		if (kick.exitCode === 0) {
+			process.stdout.write('Restarting daemon...');
+			for (let i = 0; i < 60; i++) {
+				await Bun.sleep(250);
+				if (await checkSocketAlive()) {
+					console.log(' running.');
+					process.exit(0);
+				}
+			}
+			console.log(' started (waiting for socket).');
+			process.exit(0);
+		}
+		console.log('launchctl kickstart failed, falling back to stop+start');
+	}
+
+	// Manual path: stop → poll for socket death → start
 	const stopPath = resolve(PROJECT_ROOT, 'src/stop.ts');
 	const stopProc = Bun.spawn(['bun', 'run', stopPath], {
 		stdio: ['inherit', 'inherit', 'inherit'],
@@ -57,6 +83,11 @@ if (cmd === 'restart') {
 		env: process.env,
 	});
 	await stopProc.exited;
+
+	for (let i = 0; i < 60; i++) {
+		if (!(await checkSocketAlive())) break;
+		await Bun.sleep(250);
+	}
 
 	const startPath = resolve(PROJECT_ROOT, 'src/start.ts');
 	const startProc = Bun.spawn(['bun', 'run', startPath], {

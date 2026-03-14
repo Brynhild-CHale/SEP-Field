@@ -46,7 +46,7 @@ const { stdout, stdin } = process;
 // ── Pre-flight ─────────────────────────────────────────────────────
 
 if (!existsSync(ORCHESTRATOR_SOCKET_PATH)) {
-	console.error('Daemon not running. Start it with: bun run start');
+	console.error('Daemon not running. Start it with: sep start');
 	process.exit(1);
 }
 

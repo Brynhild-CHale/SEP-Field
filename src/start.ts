@@ -36,7 +36,7 @@ if (!preflightReport.passed) {
 // 1. Socket liveness check
 if (await checkSocketAlive()) {
 	console.log('Daemon already running (socket is live)');
-	console.log('Connect with: bun run client');
+	console.log('Connect with: sep client');
 	process.exit(0);
 }
 
@@ -52,7 +52,7 @@ if (existsSync(PLIST_PATH)) {
 
 	if (kick.exitCode === 0) {
 		console.log('Daemon started via launchd');
-		console.log('Connect with: bun run client');
+		console.log('Connect with: sep client');
 		process.exit(0);
 	}
 
@@ -68,7 +68,7 @@ if (existsSync(ORCHESTRATOR_PID_PATH)) {
 	const pid = parseInt(readFileSync(ORCHESTRATOR_PID_PATH, 'utf8').trim(), 10);
 	if (!isNaN(pid) && isProcessRunning(pid)) {
 		console.log(`Daemon already running (PID: ${pid})`);
-		console.log('Connect with: bun run client');
+		console.log('Connect with: sep client');
 		process.exit(0);
 	}
 	unlinkSync(ORCHESTRATOR_PID_PATH);
@@ -94,4 +94,4 @@ writeFileSync(ORCHESTRATOR_PID_PATH, String(child.pid));
 
 console.log(`Daemon started (PID: ${child.pid})`);
 console.log(`Log: ${ORCHESTRATOR_LOG_PATH}`);
-console.log('Connect with: bun run client');
+console.log('Connect with: sep client');
