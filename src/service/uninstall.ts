@@ -13,7 +13,6 @@
  *
  * Flags:
  *   --force       Skip interactive prompts (assume yes)
- *   --remove-repo Also delete the installation directory
  */
 
 import { existsSync, readFileSync, readdirSync, unlinkSync, rmSync, cpSync, mkdirSync, statSync } from 'fs';
@@ -35,7 +34,6 @@ const HOME = process.env.HOME || '/tmp';
 const uid = process.getuid!();
 const domain = `gui/${uid}`;
 const force = process.argv.includes('--force');
-const removeRepo = process.argv.includes('--remove-repo');
 
 // Non-TTY safety
 if (!process.stdin.isTTY && !force) {
@@ -71,18 +69,6 @@ async function promptYesNo(prompt: string, defaultYes: boolean): Promise<boolean
 		process.stdout.write(prompt);
 	}
 	return defaultYes;
-}
-
-async function promptExact(prompt: string, expected: string): Promise<boolean> {
-	if (force) return true;
-	process.stdout.write(prompt);
-	for await (const line of console) {
-		const answer = line.trim();
-		if (answer === expected) return true;
-		if (answer === '' || answer.toLowerCase() === 'n' || answer.toLowerCase() === 'no') return false;
-		process.stdout.write(`  Type "${expected}" to confirm, or press Enter to skip: `);
-	}
-	return false;
 }
 
 const done: string[] = [];
@@ -409,8 +395,8 @@ if (existsSync(shimPath)) {
 // Phase 7: Remove installation directory
 // ---------------------------------------------------------------------------
 
-if (removeRepo) {
-	console.log('  Phase 7: Removing installation directory...');
+{
+	console.log('  Phase 7: Remove installation directory...');
 
 	// Check for agent sandboxes with uncommitted changes
 	const testSpaceDir = resolve(PROJECT_ROOT, 'test-space');
@@ -437,12 +423,12 @@ if (removeRepo) {
 		}
 	}
 
-	const confirmed = await promptExact(
-		`    Remove installation at ${PROJECT_ROOT}? Type "DELETE" to confirm: `,
-		'DELETE',
+	const removeRepo = await promptYesNo(
+		`    Remove installation at ${PROJECT_ROOT}? [y/N] `,
+		false,
 	);
 
-	if (confirmed) {
+	if (removeRepo) {
 		// Self-deletion: spawn detached bash process since we're inside the dir
 		const child = Bun.spawn(
 			['bash', '-c', `sleep 1 && rm -rf "${PROJECT_ROOT}"`],
@@ -457,9 +443,6 @@ if (removeRepo) {
 		console.log('    Skipped.');
 		skipped.push('Installation directory removal (user declined)');
 	}
-} else {
-	console.log('  Phase 7: Skipping installation directory (use --remove-repo to include).');
-	skipped.push('Installation directory removal (use --remove-repo)');
 }
 
 // ---------------------------------------------------------------------------
@@ -492,11 +475,6 @@ if (failed.length > 0) {
 if (backupLocation) {
 	console.log('');
 	console.log(`  User data backed up to: ${backupLocation}`);
-}
-
-if (!removeRepo) {
-	console.log('');
-	console.log(`  To also remove the installation: sep uninstall --remove-repo`);
 }
 
 console.log('');
